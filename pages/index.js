@@ -1,65 +1,171 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import React, { useState, useContext } from 'react'
+import Link from 'next/link'
+import Router from 'next/router'
+import { useQuery, useMutation } from '@apollo/react-hooks'
+import gql from 'graphql-tag'
+// import NameForm from '../components/Member'
+// import * as Cookie from 'js-cookie';
+// import cookies from 'next-cookies'
 
-export default function Home() {
+const QUERY_PRODUCTS = gql`
+  query {
+    products {
+      id
+      name
+      price
+      img
+    }
+  }
+`
+
+// const ADD_TO_CART = gql`
+//   mutation ADD_TO_CART(
+//     $id = ID!
+//     ){
+//       addToCart(
+//         pid: $id
+//       ) {
+//       id
+//     }
+//   }
+// `
+
+
+
+const Home = () => {
+  // const {data, loading, error} = useQuery(QUERY_PRODUCTS, {
+  //   pollInterval : 30000
+  // })
+  const {data, loading, error} = useQuery(QUERY_PRODUCTS)
+  if (error) return <p>Oops.. somthing went wrong, please try again later.</p>
+  if (loading) return <p>Loading...</p>
+
+  // const [addToCart, {loading, error}] = useMutation(ADD_TO_CART,{
+  //   onCompleted: data => {
+  //     console.log(data);
+  //   }
+  // })
+
+  // const [className, setClassName] = useState("")
+
+  //   const myClick = () => {
+  //       setClassName("some-class")
+  //   }
+  const handleAddToCart = (id, name, img, price) => {
+    // console.log(id, name, img, price);
+
+
+    if(JSON.parse(localStorage.getItem('cart')) == null){
+      var item = {
+        amount: 0,
+        vat: 0,
+        items: [],
+      }
+      localStorage.setItem('cart', JSON.stringify(item))
+    }
+
+    const oldItems = JSON.parse(localStorage.getItem('cart'));
+    var item = {
+      amount: 0,
+      vat: 0,
+      items: [],
+    }
+
+    var checkID = false;
+
+    //add old item
+    var amount = 0
+    var vat = 0
+    Object.keys(oldItems.items).forEach(function (key) {
+      // console.log(key); // key
+      // console.log('--- old item ---');
+      if (oldItems.items[key].id == id) {
+        oldItems.items[key].qty = oldItems.items[key].qty + 1
+        item.items.push(oldItems.items[key]);
+        checkID = true;
+      }else{
+        item.items.push(oldItems.items[key]);
+      }
+      amount = amount + (parseInt(oldItems.items[key].price) * parseInt(oldItems.items[key].qty));
+      vat = vat + (((parseInt(oldItems.items[key].price) * parseInt(oldItems.items[key].qty)) * 7) / 100) ;
+    });
+
+    //add new item
+    if (!checkID) {
+      var newItems = {
+        'id': id,
+        'name': name,
+        'img': img,
+        'price': price,
+        'qty': 1
+      }
+
+      amount = amount + parseInt(price);
+      vat = vat + ((parseInt(price) * 7) / 100) ;
+
+      item.items.push(newItems);
+    }
+
+    item.amount = amount;
+    item.vat = vat;
+
+    // console.log('--- Item ---');
+    // console.log(item);
+    localStorage.setItem('cart', JSON.stringify(item));
+
+  }
+
+  
+
+
   return (
-    <div className={styles.container}>
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+    <div style={{
+      display: 'flex',
+      maxWidth: '1280px',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      marginTop: '40px',
+      marginLeft: 'auto',
+      marginRight: 'auto',
+      marginBottom: '40px',
+    }}>
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
 
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
 
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+      {data.products.map(prod => (
+        <div
+         key={prod.id}
+         style={{
+            display:'flex',
+            flexDirection:'column',
+            margin: '10px'
+         }}>
+          <Link href='/products/[productId]' as={`/products/${prod.id}`}>
+            <a>
+                <img src={prod.img} alt={prod.name} width='300px' style={{borderRadius: '5px'}} />
+            </a>
+          </Link>
+          <h4>{prod.name}</h4>
+          <h5>฿{prod.price}</h5>
+          <button 
+            style={{
+              background:'#342f2f',
+              color: "#fff",
+              padding: 10,
+              cursor: 'pointer',
+              alignItems: 'center',
+              border: 'none',
+              borderRadius: '5px'
+            }}
+            onClick={() => handleAddToCart(prod.id, prod.name, prod.img, prod.price)}
+          >Add to Cart</button>
         </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
+      ))}
     </div>
   )
 }
+
+
+export default Home
+
+
