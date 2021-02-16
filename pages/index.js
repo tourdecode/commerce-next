@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, useEffect } from 'react'
 import Link from 'next/link'
 import Router from 'next/router'
 import { useQuery, useMutation } from '@apollo/react-hooks'
@@ -115,7 +115,7 @@ const Home = () => {
 
   }
 
-  
+  // useEffect(() => {})
 
 
   return (
